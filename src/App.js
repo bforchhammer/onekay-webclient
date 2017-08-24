@@ -75,9 +75,9 @@ var config = {
 firebase.initializeApp(config);
 
 // Retrieve Firebase Messaging object.
-const messaging = firebase.messaging();
-navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/firebase-messaging-sw.js`)
+navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw/firebase-messaging-sw.js`)
   .then((registration) => {
+    const messaging = firebase.messaging();
     messaging.useServiceWorker(registration);
 
     messaging.requestPermission()
