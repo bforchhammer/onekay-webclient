@@ -56,35 +56,38 @@ firebase.initializeApp(config);
 
 // Retrieve Firebase Messaging object.
 const messaging = firebase.messaging();
+navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/firebase-messaging-sw.js`)
+  .then((registration) => {
+    messaging.useServiceWorker(registration);
+    messaging.requestPermission()
+    .then(function() {
+      console.log('Notification permission granted.');
 
-messaging.requestPermission()
-.then(function() {
-  console.log('Notification permission granted.');
-
-  // Get Instance ID token. Initially this makes a network call, once retrieved
-  // subsequent calls to getToken will return from cache.
-  messaging.getToken()
-  .then(function(currentToken) {
-    if (currentToken) {
-      sendTokenToServer(currentToken);
-      updateUIForPushEnabled(currentToken);
-    } else {
-      // Show permission request.
-      console.log('No Instance ID token available. Request permission to generate one.');
-      // Show permission UI.
-      updateUIForPushPermissionRequired();
-      setTokenSentToServer(false);
-    }
-  })
-  .catch(function(err) {
-    console.log('An error occurred while retrieving token. ', err);
-    showToken('Error retrieving Instance ID token. ', err);
-    setTokenSentToServer(false);
+      // Get Instance ID token. Initially this makes a network call, once retrieved
+      // subsequent calls to getToken will return from cache.
+      messaging.getToken()
+      .then(function(currentToken) {
+        if (currentToken) {
+          sendTokenToServer(currentToken);
+          updateUIForPushEnabled(currentToken);
+        } else {
+          // Show permission request.
+          console.log('No Instance ID token available. Request permission to generate one.');
+          // Show permission UI.
+          updateUIForPushPermissionRequired();
+          setTokenSentToServer(false);
+        }
+      })
+      .catch(function(err) {
+        console.log('An error occurred while retrieving token. ', err);
+        showToken('Error retrieving Instance ID token. ', err);
+        setTokenSentToServer(false);
+      });
+    })
+    .catch(function(err) {
+      console.log('Unable to get permission to notify.', err);
+    });
   });
-})
-.catch(function(err) {
-  console.log('Unable to get permission to notify.', err);
-});
 
 // Callback fired if Instance ID token is updated.
 messaging.onTokenRefresh(function() {
