@@ -1,0 +1,14 @@
+.message-content {
+  font-size: 1.4em;
+  padding-bottom: .5em;
+}
+.message-footer {
+  font-size: 1em;
+  color: #666;
+}
+.message-footer .name {
+  padding-left: .5em;
+}
+.message-footer .timestamp {
+  float: right;
+}
