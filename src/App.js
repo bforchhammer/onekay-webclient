@@ -43,6 +43,26 @@ function showToken(message, err) {
   console.log("TODO implement showToken", message, err)
 }
 
+// Local storage handling for messages:
+var messagesKey = 'messages';
+
+var updateAppState = function() {
+  // "this" is be bound to the app instance below
+  var app = this;
+  localforage.getItem(messagesKey).then(function(value) {
+    app.setState({messages: value || []});
+  }).catch(console.error);
+}
+
+function storeMessage(message) {
+  // Load existing messages
+  localforage.getItem(messagesKey).then(function(value) {
+    var messages = value || [];
+    messages.push(message);
+    localforage.setItem(messagesKey, messages).then(updateAppState).catch(console.error);
+  }).catch(console.error);
+}
+
 // Initialize firebase
 var config = {
   apiKey: "AIzaSyDQOm3taDDKhjgdAwG3WaaXqWqW43OeCEY",
@@ -59,6 +79,7 @@ const messaging = firebase.messaging();
 navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/firebase-messaging-sw.js`)
   .then((registration) => {
     messaging.useServiceWorker(registration);
+
     messaging.requestPermission()
     .then(function() {
       console.log('Notification permission granted.');
@@ -87,60 +108,36 @@ navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/firebase-messaging-s
     .catch(function(err) {
       console.log('Unable to get permission to notify.', err);
     });
+
+    // Callback fired if Instance ID token is updated.
+    messaging.onTokenRefresh(function() {
+      messaging.getToken()
+      .then(function(refreshedToken) {
+        console.log('Token refreshed.');
+        // Indicate that the new Instance ID token has not yet been sent to the
+        // app server.
+        setTokenSentToServer(false);
+        // Send Instance ID token to app server.
+        sendTokenToServer(refreshedToken);
+      })
+      .catch(function(err) {
+        console.log('Unable to retrieve refreshed token ', err);
+        showToken('Unable to retrieve refreshed token ', err);
+      });
+    });
+
+    // Handle incoming messages. Called when:
+    // - a message is received while the app has focus
+    // - the user clicks on an app notification created by a sevice worker
+    //   `messaging.setBackgroundMessageHandler` handler.
+    // TODO: investigate messaging.setBackgroundMessageHandler as alternative to local storage
+    messaging.onMessage(function(payload) {
+      console.log("Message received. ", payload);
+      var fcm_data = JSON.parse(payload['data']['payload']);
+      payload = fcm_data['payload'];
+      storeMessage(payload);
+    });
   });
-
-// Callback fired if Instance ID token is updated.
-messaging.onTokenRefresh(function() {
-  messaging.getToken()
-  .then(function(refreshedToken) {
-    console.log('Token refreshed.');
-    // Indicate that the new Instance ID token has not yet been sent to the
-    // app server.
-    setTokenSentToServer(false);
-    // Send Instance ID token to app server.
-    sendTokenToServer(refreshedToken);
-  })
-  .catch(function(err) {
-    console.log('Unable to retrieve refreshed token ', err);
-    showToken('Unable to retrieve refreshed token ', err);
-  });
-});
-
-// Local storage handling for messages:
-var messagesKey = 'messages';
-
-function logError(err) {
-  console.error(err);
-}
-
-var updateAppState = function() {
-  // "this" is be bound to the app instance below
-  var app = this;
-  localforage.getItem(messagesKey).then(function(value) {
-    app.setState({messages: value});
-  }).catch(logError);
-}
-
-function storeMessage(message) {
-  // Load existing messages
-  localforage.getItem(messagesKey).then(function(value) {
-    var messages = value || [];
-    messages.push(message);
-    localforage.setItem(messagesKey, messages).then(updateAppState).catch(logError);
-  }).catch(logError);
-}
-
-// Handle incoming messages. Called when:
-// - a message is received while the app has focus
-// - the user clicks on an app notification created by a sevice worker
-//   `messaging.setBackgroundMessageHandler` handler.
-// TODO: investigate messaging.setBackgroundMessageHandler as alternative to local storage
-messaging.onMessage(function(payload) {
-  console.log("Message received. ", payload);
-  var fcm_data = JSON.parse(payload['data']['payload']);
-  payload = fcm_data['payload'];
-  storeMessage(payload);
-});
 
 function sendMessage(message) {
   return localforage.getItem('token').then(function(token) {
