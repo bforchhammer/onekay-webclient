@@ -10,6 +10,7 @@ class MessageForm extends Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.focusInput = this.focusInput.bind(this);
   }
 
   getValidationState() {
@@ -29,6 +30,10 @@ class MessageForm extends Component {
     this.setState((prevState) => ({value: prevState.value, disabled: value}));
   }
 
+  focusInput() {
+    this.textInput.focus();
+  }
+
   handleSubmit(e) {
     e.preventDefault();
 
@@ -45,10 +50,12 @@ class MessageForm extends Component {
     this.props.sendMessageFn(this.state.value)
       .then(function() {
         component.setState({value: null, disabled: false});
+        component.focusInput();
       })
       .catch(function(err) {
         console.error("Failed to submit message", err);
         component.setDisabled(false);
+        component.focusInput();
       });
   }
 
@@ -65,6 +72,7 @@ class MessageForm extends Component {
                          value={this.state.value || ''}
                          onChange={this.handleChange}
                          disabled={this.state.disabled}
+                         inputRef={(el) => { this.textInput = el; }}
                          autoFocus={true} />
             <FormControl.Feedback />
           </Col>
