@@ -19,20 +19,8 @@ firebase.initializeApp({
 // messages.
 const messaging = firebase.messaging();
 
-localforage.config({name: 'onekay-messenger'});
-
-function logError(err) {
-  console.error(err);
-}
-
-function storeMessage(message) {
-  var messagesKey = 'messages';
-  localforage.getItem(messagesKey).then(function(value) {
-    var messages = value || [];
-    messages.push(message);
-    localforage.setItem(messagesKey, messages).catch(logError);
-  }).catch(logError);
-}
+// Local storage handling for messages
+var messageStore = localforage.createInstance({name: 'onekaymessenger_messages'});
 
 // If you would like to customize notifications that are received in the
 // background (Web app is closed or not in browser focus) then you should
@@ -42,7 +30,7 @@ messaging.setBackgroundMessageHandler(function(payload) {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   var fcm_data = JSON.parse(payload['data']['payload']);
   payload = fcm_data['payload'];
-  storeMessage(payload);
+  messageStore.setItem(payload.uuid, payload).catch(console.error);
 
   const notificationTitle = 'Message from ' + payload.creator.name;
   const notificationOptions = {
