@@ -14,6 +14,8 @@ import 'whatwg-fetch';
 import localforage from 'localforage';
 import uuidv4 from 'uuid/v4';
 
+import * as messageStore from './stores/messages';
+
 localforage.config({name: 'onekay-messenger'});
 
 function sendTokenToServer(token) {
@@ -43,44 +45,12 @@ function showToken(message, err) {
   console.log("TODO implement showToken", message, err)
 }
 
-// Local storage handling for messages
-var messageStore = localforage.createInstance({name: 'onekaymessenger_messages'});
-
-// Migration of messages from previous storage implementation
-localforage.getItem('messages').then(function(messages) {
-  if (messages !== null) {
-    for (var i=0; i < messages.length; i++) {
-      var value = messages[i];
-      if (typeof(value) === 'object' && value !== null) {
-        messageStore.setItem(value.uuid, value);
-      }
-    }
-  }
-  localforage.removeItem('messages');
-});
-
-function getMessages() {
-  var messages = [];
-  return messageStore.iterate(function(value, key, num) {
-    messages.push(value);
-  }).then(function(value) {
-    messages.sort(function(m1, m2) {
-      return parseFloat(m1.timestamp) - parseFloat(m2.timestamp);
-    });
-    return messages;
-  });
-}
-
 var updateAppState = function() {
   // "this" is be bound to the app instance below
   var app = this;
-  getMessages().then(function(messages) {
+  messageStore.list().then(function(messages) {
     app.setState({messages: messages});
   }).catch(console.error);
-}
-
-function storeMessage(message) {
-  return messageStore.setItem(message.uuid, message);
 }
 
 // Initialize firebase
@@ -155,7 +125,7 @@ navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw/firebase-messagin
       console.log("Message received. ", payload);
       var fcm_data = JSON.parse(payload['data']['payload']);
       payload = fcm_data['payload'];
-      storeMessage(payload).then(updateAppState).catch(console.error);
+      messageStore.add(payload).then(updateAppState).catch(console.error);
     });
   });
 
