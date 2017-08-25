@@ -43,24 +43,44 @@ function showToken(message, err) {
   console.log("TODO implement showToken", message, err)
 }
 
-// Local storage handling for messages:
-var messagesKey = 'messages';
+// Local storage handling for messages
+var messageStore = localforage.createInstance({name: 'onekaymessenger_messages'});
+
+// Migration of messages from previous storage implementation
+localforage.getItem('messages').then(function(messages) {
+  if (messages !== null) {
+    for (var i=0; i < messages.length; i++) {
+      var value = messages[i];
+      if (typeof(value) === 'object' && value !== null) {
+        messageStore.setItem(value.uuid, value);
+      }
+    }
+  }
+  localforage.removeItem('messages');
+});
+
+function getMessages() {
+  var messages = [];
+  return messageStore.iterate(function(value, key, num) {
+    messages.push(value);
+  }).then(function(value) {
+    messages.sort(function(m1, m2) {
+      return parseFloat(m1.timestamp) - parseFloat(m2.timestamp);
+    });
+    return messages;
+  });
+}
 
 var updateAppState = function() {
   // "this" is be bound to the app instance below
   var app = this;
-  localforage.getItem(messagesKey).then(function(value) {
-    app.setState({messages: value || []});
+  getMessages().then(function(messages) {
+    app.setState({messages: messages});
   }).catch(console.error);
 }
 
 function storeMessage(message) {
-  // Load existing messages
-  localforage.getItem(messagesKey).then(function(value) {
-    var messages = value || [];
-    messages.push(message);
-    localforage.setItem(messagesKey, messages).then(updateAppState).catch(console.error);
-  }).catch(console.error);
+  return messageStore.setItem(message.uuid, message);
 }
 
 // Initialize firebase
@@ -135,7 +155,7 @@ navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw/firebase-messagin
       console.log("Message received. ", payload);
       var fcm_data = JSON.parse(payload['data']['payload']);
       payload = fcm_data['payload'];
-      storeMessage(payload);
+      storeMessage(payload).then(updateAppState).catch(console.error);
     });
   });
 
@@ -164,13 +184,13 @@ class App extends Component {
     super(props);
     this.state = {messages: []};
     updateAppState = updateAppState.bind(this);
-    updateAppState();
   }
 
   componentDidMount() {
     // Reload when window gets focused (messages may have been received in the
     // background)
     window.addEventListener("focus", updateAppState);
+    updateAppState();
   }
 
   componentWillUnmount() {
