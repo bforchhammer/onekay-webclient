@@ -1,28 +1,60 @@
-.App {
-  text-align: center;
+html, body, #root {
+  height: 100%; /*Required for column flexbox */
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.main-grid {
+  padding-top: 1%;
+  height: 98%;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center; /* align items in Main Axis */
+  align-items: center; /* align items in Cross Axis */
+  align-content: center; /* Extra space in Cross Axis */
+}
+.header, .footer {
+  flex: 0 0;
+  width: 100%;
+}
+#channels {
+  width: 100%;
+
+  flex-basis: 100%;
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow: auto;
+
+  display: flex;
+  flex-direction: row;
+
+  justify-content: flex-start; /* align items in Main Axis */
+  align-items: stretch; /* align items in Cross Axis */
+  align-content: stretch; /* Extra space in Cross Axis */
 }
 
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+.channels-tabs, .channels-content {
+  height: 100%;
+  overflow: auto;
+
+  padding-top: 1em;
+  padding-bottom: 1em;
 }
 
-.App-intro {
-  font-size: large;
+body {
+  background: purple url("background.png") repeat;
 }
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.channels-tabs {
+  background-color: #1B263B;
 }
-
-.main-content {
-  margin-top: 100px;
+.channels-content {
+  background-color: #E0E1DD;
+}
+.header, .footer {
+  background-color: #0D1B2A;
+  color: #fff;
+  font-size: 1.2em;
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+.header-user-info {
+  text-align: right;
 }

@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Button, Col, Form, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
 
+const emptyString = '';
 
 class MessageForm extends Component {
   constructor(props) {
@@ -69,7 +70,7 @@ class MessageForm extends Component {
           <Col sm={10}>
             <FormControl type="text"
                          placeholder="Enter message"
-                         value={this.state.value || ''}
+                         value={this.state.value || emptyString}
                          onChange={this.handleChange}
                          disabled={this.state.disabled}
                          inputRef={(el) => { this.textInput = el; }}
