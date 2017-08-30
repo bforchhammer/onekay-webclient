@@ -1,3 +1,6 @@
+.message-list {
+  padding-top: 1em;
+}
 .message-content {
   font-size: 1.4em;
   padding-bottom: .5em;

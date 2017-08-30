@@ -251,7 +251,7 @@ class App extends Component {
               </Nav>
               <ChannelJoinForm joinChannelFn={joinChannel}/>
             </Col>
-            <Col xs={9} sm={9} md={9} lg={9} className="channels-content" ref={(el) => { this.tabContentElement = el; }}>
+            <Col xs={9} sm={9} md={9} lg={9} className="channels-content">
               <Tab.Content animation>
                 {
                   this.state.channels.map(item => {
