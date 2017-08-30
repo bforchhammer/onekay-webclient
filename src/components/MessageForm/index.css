@@ -1,0 +1,14 @@
+.send_message_form {
+  display: flex;
+  justify-content: space-between;
+}
+.send_message_form .form_group {
+  flex: 0 0;
+}
+.send_message_form_input {
+  flex-grow: 1;
+  margin-right: 1em;
+}
+.send_message_form_input input {
+  width: 100%;
+}

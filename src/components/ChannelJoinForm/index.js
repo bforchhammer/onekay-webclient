@@ -6,14 +6,10 @@ import './index.css';
 
 const emptyString = '';
 
-class MessageForm extends Component {
+class ChannelJoinForm extends Component {
   constructor(props) {
     super(props);
     this.state = {value: null, disabled: false};
-
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.focusInput = this.focusInput.bind(this);
   }
 
   getValidationState() {
@@ -25,24 +21,20 @@ class MessageForm extends Component {
     return null;
   }
 
-  handleChange(event) {
-    this.setState({value: event.target.value, disabled: false});
-  }
-
   setDisabled(value) {
     this.setState((prevState) => ({value: prevState.value, disabled: value}));
   }
 
-  focusInput() {
-    this.textInput.focus();
+  handleChange = (event) => {
+    this.setState({value: event.target.value, disabled: false});
   }
 
-  handleSubmit(e) {
+  handleSubmit = (e) => {
     e.preventDefault();
 
     // If we fail validation, stop now.
     if (this.getValidationState() !== "success") {
-      console.log("Form validation error");
+      console.log("Channel-Join Form validation error");
       return false;
     }
 
@@ -50,41 +42,37 @@ class MessageForm extends Component {
     this.setDisabled(true);
 
     var component = this;
-    this.props.sendMessageFn(this.state.value)
+    this.props.joinChannelFn(this.state.value)
       .then(function() {
         component.setState({value: null, disabled: false});
-        component.focusInput();
       })
       .catch(function(err) {
-        console.error("Failed to submit message", err);
+        console.error("Failed to join channel", err);
         component.setDisabled(false);
-        component.focusInput();
       });
   }
 
   render() {
     return (
-      <Form inline onSubmit={this.handleSubmit} className="send_message_form">
-        <FormGroup bsSize="lg" controlId="messageFormInput" validationState={this.getValidationState()} className="send_message_form_input">
+      <Form inline onSubmit={this.handleSubmit} className="join_channel_form">
+        <FormGroup controlId="joinChannelInput" validationState={this.getValidationState()}>
           <FormControl type="text"
-                       placeholder="Enter message"
+                       placeholder="Enter channel UUID"
                        value={this.state.value || emptyString}
                        onChange={this.handleChange}
                        disabled={this.state.disabled}
-                       inputRef={(el) => { this.textInput = el; }}
-                       autoFocus={true} />
-          <FormControl.Feedback />
+                       inputRef={(el) => { this.textInput = el; }} />
         </FormGroup>
         <FormGroup>
-          <Button bsSize="lg" type="submit" disabled={this.state.disabled}>Send</Button>
+          <Button type="submit" disabled={this.state.disabled}>Join</Button>
         </FormGroup>
       </Form>
     )
   }
-}
-
-MessageForm.propTypes = {
-  sendMessageFn: PropTypes.func.isRequired
 };
 
-export default MessageForm;
+ChannelJoinForm.propTypes = {
+  joinChannelFn: PropTypes.func.isRequired
+};
+
+export default ChannelJoinForm;

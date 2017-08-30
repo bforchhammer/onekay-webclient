@@ -1,5 +1,4 @@
 import localforage from 'localforage';
-import * as channelStore from './channels';
 
 // Local storage handling for messages
 var messageStore = localforage.createInstance({name: 'onekaymessenger_messages'});
@@ -7,7 +6,6 @@ var messageStore = localforage.createInstance({name: 'onekaymessenger_messages'}
 function list(channel) {
   var messages = [];
   return messageStore.iterate(function(value, key, num) {
-    channelStore.set(value.channel_id); // Ensure the channel id is in the list of channels
     if (value.channel_id === channel) {
       messages.push(value);
     }

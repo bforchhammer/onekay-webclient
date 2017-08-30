@@ -8,11 +8,13 @@ function list() {
     channels.push(value);
   }).then(function(value) {
     channels.sort(function(a, b) {
-      if (a.last_updated === 0 && b.last_updated === 0) {
-        // If both channels were not updated (yet), order alphabetically by name
+      if (a.last_updated !== 0 || b.last_updated !== 0) {
+        return parseFloat(a.last_updated) - parseFloat(b.last_updated);
+      }
+      if (a.name != null && b.name != null) {
         return a.name.localeCompare(b.name);
       }
-      return parseFloat(a.last_updated) - parseFloat(b.last_updated);
+      return a.channel_id.localeCompare(b.channel_id);
     });
     return channels;
   });

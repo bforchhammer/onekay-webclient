@@ -17,18 +17,39 @@ import * as messageStore from './stores/messages';
 
 import MessagesList from './components/MessagesList';
 import MessageForm from './components/MessageForm';
+import ChannelJoinForm from './components/ChannelJoinForm';
 
 localforage.config({name: 'onekay-messenger'});
 
+function joinChannel(channel_id, channel_details) {
+  return localforage.getItem('token').then((token) => {
+    return fetch('https://onekay.herokuapp.com/messages/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({channel: channel_id, 'registration_token': token})
+    }).then(function(response) {
+      console.log("Channel subscription result", response);
+      channelStore.set(channel_id, channel_details);
+      updateAppState();
+    });
+  });
+}
+
 function sendTokenToServer(token) {
   localforage.setItem('token', token);
-  fetch('https://onekay.herokuapp.com/messages/subscribe', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({channel: 'channel_general', 'registration_token': token})
-  }).then(function(response) {
-    console.log("Channel subscription result", response)
-  })
+
+  // (Re-) subscribe to all channels...
+  channelStore.list().then(function(channels) {
+    // No channel yet? Add general as lobby..
+    if (channels.length === 0) {
+      joinChannel("channel_general", {name: "Lobby"});
+    }
+    else {
+      channels.forEach((channel) => {
+        joinChannel(channel.channel_id, channel);
+      });
+    }
+  });
 }
 
 function setTokenSentToServer(status) {
@@ -48,17 +69,32 @@ function showToken(message, err) {
 }
 
 var updateAppState = function() {
-  var channel = "channel_general";
+  //var channel = "channel_general";
   var app = this;  // "this" is be bound to the app instance below
-  messageStore.list(channel).then(function(messages) {
+  /*messageStore.list(channel).then(function(messages) {
     app.setState((prevState) => {
       return Object.assign({}, prevState, {messages: messages});
     });
-  }).catch(console.error);
+  }).catch(console.error);*/
 
+  // Load channels...
   channelStore.list().then(function(channels) {
-    app.setState((prevState) => {
-      return Object.assign({}, prevState, {channels: channels});
+    var promises = [];
+    // ... then for each channel load all messages and save them as nested prop.
+    channels.forEach((channel) => {
+      channel.messages = [];
+      var p = messageStore.list(channel.channel_id).then(function(messages) {
+        channel.messages = messages;
+      });
+      promises.push(p)
+    });
+
+    // Once everythins is loaded update the component state.
+    // TODO we need better state binding here... redux maybe?
+    return Promise.all(promises).then(() => {
+      app.setState((prevState) => {
+        return Object.assign({}, prevState, {channels: channels});
+      });
     });
   }).catch(console.error);
 }
@@ -135,6 +171,8 @@ navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw/firebase-messagin
       payload = fcm_data['payload'];
       console.log("Message received. ", payload);
       messageStore.add(payload).then(updateAppState).catch(console.error);
+      // Ensure the channel id is in the list of channels
+      channelStore.set(payload.channel_id).catch(console.error);
     });
   });
 
@@ -161,7 +199,8 @@ function sendMessage(channel_id, message) {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {messages: [], channels: []};
+    this.state = {channels: []};
+    this.currentChannelId = "channel_general";
     updateAppState = updateAppState.bind(this);
   }
 
@@ -180,8 +219,11 @@ class App extends Component {
   }
 
   sendMessage = (message) => {
-    var active_channel = "channel_general";
-    return sendMessage(active_channel, message);
+    return sendMessage(this.currentChannelId, message);
+  }
+
+  onTabSelect = (activeKey) => {
+    this.currentChannelId = activeKey;
   }
 
   render() {
@@ -195,18 +237,19 @@ class App extends Component {
             User info?
           </Col>
         </Row>
-        <Tab.Container id="channels" defaultActiveKey={"channel_general"}>
+        <Tab.Container id="channels" defaultActiveKey={"channel_general"} onSelect={this.onTabSelect}>
           <Row>
             <Col xs={3} sm={3} md={3} lg={3} className="channels-tabs">
               <Nav bsStyle="pills" stacked>
                 {
                   this.state.channels.map(item => {
                     return (
-                      <NavItem key={"tab:" + item.channel_id} eventKey={item.channel_id}>{item.channel_id}</NavItem>
+                      <NavItem key={"tab:" + item.channel_id} eventKey={item.channel_id}>{item.name || item.channel_id}</NavItem>
                     )
                   })
                 }
               </Nav>
+              <ChannelJoinForm joinChannelFn={joinChannel}/>
             </Col>
             <Col xs={9} sm={9} md={9} lg={9} className="channels-content" ref={(el) => { this.tabContentElement = el; }}>
               <Tab.Content animation>
@@ -214,7 +257,7 @@ class App extends Component {
                   this.state.channels.map(item => {
                     return (
                       <Tab.Pane key={"pane:" + item.channel_id} eventKey={item.channel_id}>
-                        <MessagesList data={this.state.messages}/>
+                        <MessagesList data={item.messages}/>
                       </Tab.Pane>
                     )
                   })

@@ -1,0 +1,9 @@
+.join_channel_form {
+  padding-top: 2em;
+  padding-bottom: 1em;
+  display: flex;
+  justify-content: space-between;
+}
+.join_channel_form .form_group {
+  flex: 0 0;
+}
