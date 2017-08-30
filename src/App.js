@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom'
 
 import { Grid, Row, Col, Tab, Nav, NavItem } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css'
@@ -211,11 +210,6 @@ class App extends Component {
 
   componentWillUnmount() {
     window.removeEventListener("focus", updateAppState);
-  }
-
-  componentDidUpdate() {
-    var tabContentElement = ReactDOM.findDOMNode(this.tabContentElement);
-    tabContentElement.scrollTop = tabContentElement.scrollHeight;
   }
 
   sendMessage = (message) => {

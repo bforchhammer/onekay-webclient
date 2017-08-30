@@ -6,10 +6,22 @@ import Message from '../Message';
 import './index.css';
 
 
-class MessagesList extends Component {
-  componentDidUpdate() {
+class CustomScrollBars extends Component {
+  componentDidMount() {
     this.scrollBars.scrollToBottom();
   }
+
+  render() {
+    return (
+      <ScrollBars ref={(el) => {this.scrollBars = el}}>
+         {this.props.children}
+      </ScrollBars>
+    )
+  }
+}
+
+
+class MessagesList extends Component {
   render() {
     if (!this.props.data.length) {
         return (
@@ -18,7 +30,7 @@ class MessagesList extends Component {
     }
 
     return (
-      <ScrollBars ref={(el) => {this.scrollBars = el}}>
+      <CustomScrollBars>
         <div className="message-list">
           <ListGroup componentClass="ul">
             {
@@ -48,7 +60,7 @@ class MessagesList extends Component {
             }
           </ListGroup>
         </div>
-      </ScrollBars>
+      </CustomScrollBars>
     )
   }
 }
