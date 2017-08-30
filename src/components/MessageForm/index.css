@@ -9,6 +9,6 @@
   flex-grow: 1;
   margin-right: 1em;
 }
-.send_message_form_input input {
+.send_message_form_input .form-control {
   width: 100%;
 }
