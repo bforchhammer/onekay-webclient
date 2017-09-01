@@ -232,7 +232,7 @@ class App extends Component {
   }
 
   sendMessage = (message) => {
-    return sendMessage(this.currentChannelId, message);
+    return sendMessage(this.state.active_channel, message);
   }
 
   onTabSelect = (activeKey) => {
