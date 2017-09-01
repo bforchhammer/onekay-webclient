@@ -67,7 +67,7 @@ function showToken(message, err) {
   console.log("TODO implement showToken", message, err)
 }
 
-var updateAppState = function() {
+var updateAppState = function(active_channel) {
   //var channel = "channel_general";
   var app = this;  // "this" is be bound to the app instance below
   /*messageStore.list(channel).then(function(messages) {
@@ -92,7 +92,11 @@ var updateAppState = function() {
     // TODO we need better state binding here... redux maybe?
     return Promise.all(promises).then(() => {
       app.setState((prevState) => {
-        return Object.assign({}, prevState, {channels: channels});
+        var updates = {channels: channels};
+        if (active_channel !== undefined) {
+          updates.active_channel = active_channel;
+        }
+        return Object.assign({}, prevState, updates);
       });
     });
   }).catch(console.error);
@@ -169,11 +173,24 @@ navigator.serviceWorker.register(`${process.env.PUBLIC_URL}/sw/firebase-messagin
       var fcm_data = JSON.parse(payload['data']['payload']);
       payload = fcm_data['payload'];
       console.log("Message received. ", payload);
-      messageStore.add(payload).then(updateAppState).catch(console.error);
+      messageStore.add(payload).then(() => updateAppState()).catch(console.error);
       // Ensure the channel id is in the list of channels
       channelStore.set(payload.channel_id).catch(console.error);
     });
   });
+
+// When a user clicks a notification, the service worker sends a message to the
+// active window with a "message_received" key containing the message payload.
+// We can use this to open and highlight the respective channel and message.
+navigator.serviceWorker.addEventListener('message', event => {
+  if (typeof event.data === 'object' && 'message_received' in event.data) {
+    var payload = event.data.message_received;
+    // Trigger a refresh of app state from localforage, and open the respective
+    // channel.
+    updateAppState(payload.channel_id);
+    console.log("Todo: higlight new message(s) in channel", payload.uuid);
+  }
+});
 
 function sendMessage(channel_id, message) {
   return localforage.getItem('token').then(function(token) {
@@ -198,18 +215,20 @@ function sendMessage(channel_id, message) {
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {channels: []};
-    this.currentChannelId = "channel_general";
+    this.state = {
+      channels: [],
+      active_channel: "channel_general",
+    };
     updateAppState = updateAppState.bind(this);
   }
 
   componentDidMount() {
-    window.addEventListener("focus", updateAppState);
+    window.addEventListener("focus", () => updateAppState());
     updateAppState();
   }
 
   componentWillUnmount() {
-    window.removeEventListener("focus", updateAppState);
+    window.removeEventListener("focus", () => updateAppState());
   }
 
   sendMessage = (message) => {
@@ -217,7 +236,10 @@ class App extends Component {
   }
 
   onTabSelect = (activeKey) => {
-    this.currentChannelId = activeKey;
+    this.setState(prevState => {
+      prevState['active_channel'] = activeKey;
+      return prevState;
+    })
   }
 
   render() {
@@ -231,7 +253,7 @@ class App extends Component {
             User info?
           </Col>
         </Row>
-        <Tab.Container id="channels" defaultActiveKey={"channel_general"} onSelect={this.onTabSelect}>
+        <Tab.Container id="channels" activeKey={this.state.active_channel} onSelect={this.onTabSelect}>
           <Row>
             <Col xs={3} sm={3} md={3} lg={3} className="channels-tabs">
               <Nav bsStyle="pills" stacked>
