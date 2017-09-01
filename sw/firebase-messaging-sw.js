@@ -34,7 +34,8 @@ messaging.setBackgroundMessageHandler(function(payload) {
 
   const notificationTitle = 'Message from ' + payload.creator.name;
   const notificationOptions = {
-    icon: payload.creator.avatar
+    icon: payload.creator.avatar,
+    data: payload,
   };
 
   if (payload.content.type === 'text') {
@@ -46,6 +47,35 @@ messaging.setBackgroundMessageHandler(function(payload) {
   else {
     notificationOptions['body'] = payload.content.type + ' message';
   }
+
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 // [END background_handler]
+
+// It's possible to add action links to the notification (max 2 on chrome, see
+// Notification.maxActions); add entries to notificationOptions "actions":
+// * action: A DOMString identifying a user action to be displayed on the notification.
+// * title: A DOMString containing action text to be shown to the user.
+// * icon: A USVString containg the URL of an icon to display with the action.
+// The check "event.action" in the event handler below.
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  var payload = event.notification.data;
+
+  event.waitUntil(async function() {
+    const allClients = await clients.matchAll({
+      includeUncontrolled: true
+    });
+    let chatClient;
+    if (allClients.length > 0) {
+      chatClient = allClients[0];
+    }
+    else {
+      chatClient = await clients.openWindow();
+    }
+
+    // Tell the client to focus the window and show the respective message.
+    chatClient.focus();
+    chatClient.postMessage({message_received: payload});
+  }());
+}, false);
