@@ -10,6 +10,9 @@ class CustomScrollBars extends Component {
   componentDidMount() {
     this.scrollBars.scrollToBottom();
   }
+  componentDidUpdate() {
+    this.scrollBars.scrollToBottom();
+  }
 
   render() {
     return (
